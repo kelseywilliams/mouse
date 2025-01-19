@@ -1,0 +1,23 @@
+{
+  "name": "home",
+  "version": "1.0.0",
+  "description": "Broadcast connected users mouse positions",
+  "main": "index.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelseywilliams/mouse.git"
+  },
+  "author": "Kelsey Williams",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kelseywilliams/mouse/issues"
+  },
+  "homepage": "https://github.com/kelseywilliams/mouse#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
