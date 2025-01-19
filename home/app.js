@@ -15,13 +15,13 @@ if (process.env.NODE_ENV === "production") {
         cert: cert
     };
 
-    server = createServer(options, app);
+    server = https.createServer(options, app);
     console.log("Express server on https");
 } else {
-    server = createServer(app);
+    server = http.createServer(app);
     console.log("Express server on http");
 }
-server = createServer(app);
+
 const io = new Server(server);
 
 app.use(express.static("public"));
