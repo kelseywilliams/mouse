@@ -7,6 +7,7 @@ const { Server } = require('socket.io');
 
 const app = express();
 var server;
+console.log(process.env.NODE_ENV);
 if (process.env.NODE_ENV === "production") {
     var key = fs.readFileSync("/etc/letsencrypt/live/kelseywilliams.co/privkey.pem");
     var cert = fs.readFileSync("/etc/letsencrypt/live/kelseywilliams.co/fullchain.pem");
