@@ -6,6 +6,13 @@ const dotenv = require("dotenv").config();
 const { Server } = require('socket.io');
 
 const app = express();
+app.use(express.static("public"));
+
+app.get("/", (req, res) => {
+    if (err) res.status(500);
+    res.status(200);
+});
+
 var server;
 console.log(process.env.NODE_ENV);
 if (process.env.NODE_ENV === "production") {
@@ -24,13 +31,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const io = new Server(server);
-
-app.use(express.static("public"));
-
-app.get("/", (req, res) => {
-    if (err) res.status(500);
-    res.status(200);
-});
 
 server.listen(3001);
 
