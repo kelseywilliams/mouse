@@ -3,7 +3,6 @@ version: "3.8"
 services:
   mouse:
     build: ./home
-    hostname: home
     # volumes:
     #   - /etc/letsencrypt/live/kelseywilliams.co/privkey.pem:/etc/letsencrypt/live/kelseywilliams.co/privkey.pem:ro
     #   - /etc/letsencrypt/live/kelseywilliams.co/fullchain.pem:/etc/letsencrypt/live/kelseywilliams.co/fullchain.pem:ro
@@ -12,7 +11,7 @@ services:
     ports:
        - "3001:3001"
     healthcheck:
-      test:  ["CMD", "curl", "-f", "http://home:3001"]
+      test:  ["CMD", "curl", "-f", "http://mouse:3001"]
       interval: 10s
       timeout: 1s
 networks:
