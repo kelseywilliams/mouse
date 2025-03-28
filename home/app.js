@@ -19,7 +19,7 @@ console.log('Express started on port 3001');
 
 // Returns redis client
 async function connect(){
-    const redis = new Redis(process.env.REDIS_URL);
+    const redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
     return redis;
 }
 
