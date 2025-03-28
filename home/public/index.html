@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <!-- Link to CSS file -->
     <link rel="stylesheet" href="https://kelseywilliams.co/stylesheets/main.css">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="scripts/script.js"></script>
 </head>
 <body>
     <!-- The header remains at the top -->
@@ -21,12 +23,6 @@
     <main>
         <div id="x"></div>
         <div id="y"></div>
-        <script>
-            document.addEventListener("mousemove", function(e) {
-                document.getElementById("x").textContent = `X=${e.clientX}`;
-                document.getElementById("y").textContent = `Y=${e.clientY}`;
-            });
-        </script>
     </main>
 
     <!-- Footer that stays at the bottom -->
