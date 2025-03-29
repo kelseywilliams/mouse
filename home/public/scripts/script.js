@@ -6,7 +6,9 @@ async function sendCoords(socket){
         document.getElementById("y").textContent = `Y=${e.clientY}`;
         const msg = JSON.stringify({"id":socket.id,"x":e.clientX,"y":e.clientY,"ttl":Date.now()});
         try{
-            socket.emit("send-coords", msg);
+            if (socket.id){
+                socket.emit("send-coords", msg)
+            }
         } catch (err) {
             console.log(`Error sending data: ${err}`);
         }
@@ -17,7 +19,6 @@ async function getCoords(socket){
     const mice = {};
     socket.on("get-coords", (msg) => {
         const data = JSON.parse(msg);
-        console.log(data);
         const { id, x, y, ttl } = data; 
         if (id && !mice[id]) {
             console.log(mice);
@@ -55,14 +56,18 @@ async function getCoords(socket){
             document.body.appendChild(container);
     
             mice[id] = container;
+        } else {
+            // Update that user's mouse position
+            mice[id].style.left = x + "px";
+            mice[id].style.top = y + "px";
         }
-    
-        // Update that user's mouse position
-        mice[id].style.left = x + "px";
-        mice[id].style.top = y + "px";
     });
 }
 async function handleDisconnect(socket){
+    socket.on("inactivity", () =>{
+        console.log("User inactive for too long");
+        socket.disconnect();
+    })
     socket.on("disconnect", (err) => {
         console.log(`Socket disconnected: ${err}`);
         socket.disconnect();
