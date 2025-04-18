@@ -7,7 +7,6 @@ export default class Manager {
         this.socket = socket;
         this.redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
         this.MAX_CONN = 10;
-        this.TTL = 15;
         this.alive = "alive";
         this.inactive = "inactive";
         this.clock();
@@ -25,7 +24,8 @@ export default class Manager {
         do {
             const [next, conns] = await this.redis.sscan(this.alive, cursor);
             conns.forEach(conn => {
-                if (Date.now() - JSON.parse(conn).ttl > this.TTL){
+                let delta = Date.now() - JSON.parse(conn).ttl;
+                if (delta > 0){
                     if(this.remove(conn)){
                         console.log(`Removed connection ${conn}`);
                     }

@@ -6,11 +6,11 @@ import dotenv from "dotenv";
 dotenv.config();
 import { Server } from "socket.io";
 import Redis from "ioredis";
-import Manager from "./public/scripts/Manager.js"
+import Manager from "./Manager.js"
 
 // Returns express app and socket
 const app = express()
-app.use(express.static("public"));
+app.use(express.static("frontend"));
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -18,7 +18,7 @@ console.log("Express server on http");
 server.listen(3001);
 console.log('Express started on port 3001');
 
-manager = new Manager(io);
+const manager = new Manager(io);
 
 // Returns redis client
 async function connect(){

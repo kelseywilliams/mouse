@@ -4,7 +4,7 @@
   "description": "Broadcast connected users mouse positions",
   "main": "index.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node backend/app.js"
   },
   "repository": {
     "type": "git",
