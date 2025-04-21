@@ -1,7 +1,17 @@
 class Client {
     constructor(){
         this.socket = io();
-        this.TIMEOUT = 15000;
+        this.TIMEOUT = 30000;
+        this.connected = false;
+        this.clock();
+    }
+    clock() {
+        setInterval(() => {
+            if (this.socket.connected != this.connected){
+                console.log(this.connected ? "status: disconnected" : "status: connected");
+                this.connected = this.socket.connected;
+            }
+        }, 1000);
     }
     // Util Functions
     createMouse(id, mice) {
@@ -43,16 +53,13 @@ class Client {
     rinseAndStringifyEntry(id, x, y, ttl){
         // Util stuff
         function checkNum(l,v){
-            if (!v){
-                console.log(`Warning. ${l} is possibly undefined.  ${l} = ${v}`)
-            }
             if (!/^\d+$/.test(v)){
                 return true;
             }
             return false;
         }
         // Check socket id
-        if (!id){
+        if (id === "undefined" && this.connected){
             console.log(`Warning. id is possibly undefined.  id = ${id}.`)
         }
         else if (id.length != 20){
@@ -85,18 +92,14 @@ class Client {
             let x = e.clientX;
             let y = e.clientY;
             let ttl = Date.now() + this.TIMEOUT;
-            let msg = this.rinseAndStringifyEntry(this.socket.id, x, y, ttl);
-            if (!msg){
-                console.log("Dropped entry. Aborting and continuing...")
-            }
-            try{
-                if (this.socket.id){
+            if (this.connected){
+                let msg = this.rinseAndStringifyEntry(this.socket.id, x, y, ttl);
+                try{
                     this.socket.emit("send-coords", msg)
+                } catch (err) {
+                    console.log(`Error sending data: ${err}`);
                 }
-            } catch (err) {
-                console.log(`Error sending data: ${err}`);
             }
-
         });
     }
     async getCoords(){
@@ -105,7 +108,6 @@ class Client {
             const data = JSON.parse(msg);
             const { id, x, y, ttl } = data; 
             if (id && !mice[id]) {
-                console.log(mice);
                 this.createMouse(id, mice);
             } else {
                 // Update that user's mouse position
@@ -115,14 +117,10 @@ class Client {
         });
     }
     async handleDisconnect(){
-        this.socket.on("inactivity", () =>{
-            console.log("User inactive for too long");
+        this.socket.on("inactive", () =>{
+            console.log("User kicked for inactivity");
             this.socket.disconnect();
         })
-        this.socket.on("disconnect", (err) => {
-            console.log(`socket disconnected: ${err}`);
-            this.socket.disconnect();
-        });
         this.socket.on("connect_error", (err) => {
             console.log(`socket connection error: ${err}`);
             this.socket.disconnect();

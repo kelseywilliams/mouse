@@ -70,13 +70,12 @@ export default class Manager {
 
         const exists = await this.redis.hexists(this.alive, id);
         if (!exists){
-            throw new Error(`Validate method attempted to remove connection that is not part of ${this.alive} set.`);
+            throw new Error(`Attempted to remove connection that does not exist.  id attempted = ${id}.`);
         }
         await this.redis.hdel(this.alive, id);
         const clientSock = this.socket.sockets.sockets.get(id);
         if (clientSock && clientSock.connected){
             this.socket.to(id).emit(this.inactive, id);
-            clientSock.disconnect();
             return true;
         }
         return false;

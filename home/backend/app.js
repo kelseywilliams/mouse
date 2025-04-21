@@ -12,13 +12,13 @@ import Manager from "./scripts/Manager.js"
 const app = express()
 app.use(express.static("frontend"));
 const server = http.createServer(app);
-const io = new Server(server);
+const socket = new Server(server);
 
 console.log("Express server on http");
 server.listen(3001);
 console.log('Express started on port 3001');
 
-const manager = new Manager(io);
+const manager = new Manager(socket);
 
 // Returns redis client
 async function connect(){
@@ -32,8 +32,9 @@ async function connect(){
 
 }
 
-async function getCoords(socket){
+async function handler (socket){
     const publisher = await connect();
+    const subscriber = await connect();
     socket.on("connection", async (socket) => {
         socket.on("send-coords", async (msg) =>{
             const obj = JSON.parse(msg);
@@ -45,28 +46,43 @@ async function getCoords(socket){
                 await publisher.publish("send-coords", msg);
             }
         });
+        subscriber.subscribe("send-coords", (err, count) => {
+            if (err){
+                console.log("Error subscribing to send-coords: " + err);
+            } else {
+                console.log(`Subscribed to send-coords.`);
+            }
+        });
+        subscriber.on("message", (channel, msg) => {
+            if (channel == "send-coords"){
+                const id = JSON.parse(msg).id;
+                socket.except(id).emit("get-coords", msg);
+            }
+        });
     });
-
-}
-
-async function sendCoords(socket){
-    const subscriber = await connect();
-    subscriber.subscribe("send-coords", (err, count) => {
-        if (err){
-            console.log("Error subscribing to send-coords: " + err);
-        } else {
-            console.log(`Subscribed to send-coords.`);
-        }
-    });
-    subscriber.on("message", (channel, msg) => {
-        if (channel == "send-coords"){
-                socket.emit("get-coords", msg);
-        }
+    socket.on("disconnect", () => {
+        subscriber.unsubscribe("send-coords");
+        subscriber.quit();
+        publisher.quit();
     })
 }
 
-getCoords(io);
-sendCoords(io);
+// async function sendCoords(socket){
+ 
+//     subscriber.subscribe("send-coords", (err, count) => {
+//         if (err){
+//             console.log("Error subscribing to send-coords: " + err);
+//         } else {
+//             console.log(`Subscribed to send-coords.`);
+//         }
+//     });
+//     subscriber.on("message", (channel, msg) => {
+//         if (channel == "send-coords"){
+//             socket.broadcast.emit("get-coords", msg);
+//         }
+//     })
+// }
+await handler(socket);
 
 app.get("/", (req, res) => {
     if (err) res.status(500);
