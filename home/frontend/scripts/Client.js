@@ -53,10 +53,10 @@ class Client {
         }
         // Check socket id
         if (!id){
-            console.log(`Warning. Id returned false.  Id = ${id}.`)
+            console.log(`Warning. id is possibly undefined.  id = ${id}.`)
         }
         else if (id.length != 20){
-            console.log(`Warning.  Id is of unexpected length: ${id.length}`);
+            console.log(`Warning.  id is of unexpected length: id.length = ${id.length}`);
         }
         // Check for funny business.  These should be numbers, nothing else!
         if (checkNum("x",x)){
@@ -70,10 +70,10 @@ class Client {
         }
         else {
             const entry = JSON.stringify({
-                "id": this.socket.id,
-                "x":x,
-                "y":y,
-                "ttl":ttl
+                id: this.socket.id,
+                x:x,
+                y:y,
+                ttl:ttl
             });
             return entry;
         }

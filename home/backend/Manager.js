@@ -6,10 +6,37 @@ export default class Manager {
     constructor(socket) {
         this.socket = socket;
         this.redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
-        this.MAX_CONN = 10;
+        this.MAX_CONN = 1;
         this.alive = "alive";
         this.inactive = "inactive";
         this.clock();
+    }
+    // Util methods
+
+    // Splits conn json into id and ttl and sanitizes it
+    parseIDandTTL(conn){
+        const parsed = JSON.parse(conn);
+        const id = Object.keys(parsed)[0];
+        const ttl = parsed[id];
+        
+        if (!id || !ttl) {
+            console.warn(`Warning: id or ttl is undefined. id = ${id} ttl = ${ttl})`);
+            return false;
+        }
+        
+        const ttlStr = String(ttl);
+        if (!/^\d+$/.test(ttlStr)) {
+            console.warn(`Warning: ttl is non-numerical or negative ttl = ${ttl}`);
+            return false;
+        }
+        
+        if (id.length !== 20) {
+            console.warn(`Warning: id is of unexpected length: ${id.length}`);
+            return false;
+        }
+        
+        // all checks passed
+        return { id, ttl }
     }
     clock() {
         setInterval(() => {
@@ -17,32 +44,34 @@ export default class Manager {
         }, 1000);
     }
     async manage() {
-        if (this.redis.scard(this.alive) > this.MAX_CONN){
+        if (this.redis.hlen(this.alive) > this.MAX_CONN){
             throw new Error("Maximum number of concurrent connections exceeded.");
         }
-        let cursor = 0;
-        do {
-            const [next, conns] = await this.redis.sscan(this.alive, cursor);
-            conns.forEach(conn => {
-                let delta = Date.now() - JSON.parse(conn).ttl;
-                if (delta > 0){
-                    if(this.remove(conn)){
-                        console.log(`Removed connection ${conn}`);
-                    }
+
+        const obj = await this.redis.hgetall(this.alive);
+        for (const [id, ttl] of Object.entries(obj)) {
+            const delta = ttl - Date.now();
+            const conn = JSON.stringify({ [id]: ttl });
+            console.log(`${id} ${ttl} ${Math.round(delta /1000)} secs`)
+            if (delta < 0){
+                if(this.remove(conn)){
+                    console.log(`Removed connection ${conn}`);
                 }
-            })
-            cursor = next;
-        } while (cursor != 0);
+            }
+        }
     }
-    remove(conn) {
-        if (!JSON.parse(conn).id) {
-            console.log("Missing key id. Returning false");
+    async remove(conn) {
+        const parsed = this.parseIDandTTL(conn);
+        if(!parsed) {
+            return false;
         }
-        if (!this.redis.sismember(this.alive, conn)){
-            throw new Error(`Validate method attempted to remove connection that is not part of ${this.active} set.`);
+        const { id, ttl } = parsed;
+
+        const exists = await this.redis.hexists(this.alive, id);
+        if (!exists){
+            throw new Error(`Validate method attempted to remove connection that is not part of ${this.alive} set.`);
         }
-        this.redis.srem(this.alive, conn);
-        const id = JSON.parse(conn).id;
+        await this.redis.hdel(this.alive, id);
         const clientSock = this.socket.sockets.sockets.get(id);
         if (clientSock && clientSock.connected){
             this.socket.to(id).emit(this.inactive, id);
@@ -52,35 +81,28 @@ export default class Manager {
         return false;
     }
     async push(conn){
-        if (!JSON.parse(conn).id) {
-            console.log("Missing id key. Returning false.");
-        }
-        const ismember = await this.redis.sismember(this.active, conn);
-        if (ismember){
-            console.log(`Cannot push connection to set ${this.active} because the connection is already a member of set ${this.active}.`);
-        }
-        if (this.redis.scard(this.alive) >= this.MAX_CONN){
-            console.log(`Cannot push connection to set ${this.active} because the maximum number of concurrent connections has been reached.`);        }
-        this.redis.sadd(this.alive, conn);
-        if (this.redis.sismember(this.alive, conn)) return true;
-        return false;
-    }
-    async update(conn){
-        const id = JSON.parse(conn).id
-        if (!JSON.parse(conn).id) {
-            console.log("Missing key id. Returning false.");
+        const parsed = this.parseIDandTTL(conn);
+        if(!parsed) {
             return false;
         }
-        if (this.redis.sismember(this.active, conn)){
-            try{
-                this.redis.srem(this.active, conn);
-                this.redis.sadd(this.active, conn);
+        const { id, ttl } = parsed;
+
+        // Look for an existing entry in alive channel
+        const exists = await this.redis.hexists(this.alive, id);
+
+        // If this is an existing connection, remove it from the channel and update
+        if (exists) {
+            await this.redis.hset(this.alive, id, ttl);
+            return true;
+        } else {
+            // If this is a new connection, check if we can accept it
+            const count = await this.redis.hlen(this.alive);
+            if (count >= this.MAX_CONN){
+                console.log(`Cannot push connection to set ${this.alive} because the maximum number of concurrent connections has been reached.`);
+            } else {
+                await this.redis.hset(this.alive, id, ttl);
                 return true;
-            } catch(err){
-                console.log(`Failed to update connection ${id}.  ${err}`);
             }
-        }  else {
-            console.log(`Connection ${id} is not a member of set ${this.alive}`)
         }
         return false;
     }

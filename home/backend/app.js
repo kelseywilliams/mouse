@@ -22,23 +22,26 @@ const manager = new Manager(io);
 
 // Returns redis client
 async function connect(){
-    const redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
-    return redis;
+    try {
+        const redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
+        redis.select(0);
+        return redis;
+    } catch(e){
+        throw new Error(e);
+    }
+
 }
 
 async function getCoords(socket){
     const publisher = await connect();
     socket.on("connection", async (socket) => {
         socket.on("send-coords", async (msg) =>{
-            const msg_json = JSON.parse(msg);
-            const id = msg_json.id;
-            const ttl = msg_json.ttl;
-            const conn = {id: id, ttl: ttl};
-            if (await manager.push(JSON.stringify(conn))){
-                if(manager.update(JSON.stringify(conn))){
-                    console.log(`Updated ${id}`);
-                };
-                console.log(`Publishing from msg from ${id}`);
+            const obj = JSON.parse(msg);
+            const id = obj.id;
+            const ttl = obj.ttl;
+            const conn = JSON.stringify({ [id]: ttl });
+            if (await manager.push(conn)){
+                console.log(`Updated ${id}`);
                 await publisher.publish("send-coords", msg);
             }
         });
