@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { Server } from "socket.io";
 import Redis from "ioredis";
-import Manager from "./Manager.js"
+import Manager from "./scripts/Manager.js"
 
 // Returns express app and socket
 const app = express()

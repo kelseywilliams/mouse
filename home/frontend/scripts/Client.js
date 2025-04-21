@@ -1,7 +1,7 @@
 class Client {
     constructor(){
         this.socket = io();
-        this.TTL = 15000;
+        this.TIMEOUT = 15000;
     }
     // Util Functions
     createMouse(id, mice) {
@@ -84,7 +84,7 @@ class Client {
         document.addEventListener("mousemove", (e) => {
             let x = e.clientX;
             let y = e.clientY;
-            let ttl = Date.now() + this.TTL;
+            let ttl = Date.now() + this.TIMEOUT;
             let msg = this.rinseAndStringifyEntry(this.socket.id, x, y, ttl);
             if (!msg){
                 console.log("Dropped entry. Aborting and continuing...")

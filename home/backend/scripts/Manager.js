@@ -6,7 +6,7 @@ export default class Manager {
     constructor(socket) {
         this.socket = socket;
         this.redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
-        this.MAX_CONN = 1;
+        this.MAX_CONN = process.env.MAX_CONN;
         this.alive = "alive";
         this.inactive = "inactive";
         this.clock();
@@ -44,7 +44,8 @@ export default class Manager {
         }, 1000);
     }
     async manage() {
-        if (this.redis.hlen(this.alive) > this.MAX_CONN){
+        const num_conns = await this.redis.hlen(this.alive);
+        if (num_conns > this.MAX_CONN){
             throw new Error("Maximum number of concurrent connections exceeded.");
         }
 
