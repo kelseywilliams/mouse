@@ -11,14 +11,15 @@ export default class Manager {
         this.inactive = "inactive";
         this.clock();
     }
+    clock() {
+        setInterval(() => {
+            this.manage();
+        }, 1000);
+    }
     // Util methods
 
     // Splits conn json into id and ttl and sanitizes it
-    parseIDandTTL(conn){
-        const parsed = JSON.parse(conn);
-        const id = Object.keys(parsed)[0];
-        const ttl = parsed[id];
-        
+    checkIDandTTL(id, ttl){      
         if (!id || !ttl) {
             console.warn(`Warning: id or ttl is undefined. id = ${id} ttl = ${ttl})`);
             return false;
@@ -38,11 +39,7 @@ export default class Manager {
         // all checks passed
         return { id, ttl }
     }
-    clock() {
-        setInterval(() => {
-            this.manage();
-        }, 1000);
-    }
+
     async manage() {
         const num_conns = await this.redis.hlen(this.alive);
         if (num_conns > this.MAX_CONN){
@@ -52,22 +49,15 @@ export default class Manager {
         const obj = await this.redis.hgetall(this.alive);
         for (const [id, ttl] of Object.entries(obj)) {
             const delta = ttl - Date.now();
-            const conn = JSON.stringify({ [id]: ttl });
             console.log(`${id} ${ttl} ${Math.round(delta /1000)} secs`)
             if (delta < 0){
-                if(this.remove(conn)){
-                    console.log(`Removed connection ${conn}`);
+                if(this.remove(id)){
+                    console.log(`Removed connection ${id}`);
                 }
             }
         }
     }
-    async remove(conn) {
-        const parsed = this.parseIDandTTL(conn);
-        if(!parsed) {
-            return false;
-        }
-        const { id, ttl } = parsed;
-
+    async remove(id) {
         const exists = await this.redis.hexists(this.alive, id);
         if (!exists){
             throw new Error(`Attempted to remove connection that does not exist.  id attempted = ${id}.`);
@@ -80,12 +70,10 @@ export default class Manager {
         }
         return false;
     }
-    async push(conn){
-        const parsed = this.parseIDandTTL(conn);
-        if(!parsed) {
+    async push(id, ttl){
+        if(!this.checkIDandTTL(id, ttl)){
             return false;
         }
-        const { id, ttl } = parsed;
 
         // Look for an existing entry in alive channel
         const exists = await this.redis.hexists(this.alive, id);

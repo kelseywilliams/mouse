@@ -40,8 +40,7 @@ async function handler (socket){
             const obj = JSON.parse(msg);
             const id = obj.id;
             const ttl = obj.ttl;
-            const conn = JSON.stringify({ [id]: ttl });
-            if (await manager.push(conn)){
+            if (await manager.push(id, ttl)){
                 console.log(`Updated ${id}`);
                 await publisher.publish("send-coords", msg);
             }
@@ -67,21 +66,6 @@ async function handler (socket){
     })
 }
 
-// async function sendCoords(socket){
- 
-//     subscriber.subscribe("send-coords", (err, count) => {
-//         if (err){
-//             console.log("Error subscribing to send-coords: " + err);
-//         } else {
-//             console.log(`Subscribed to send-coords.`);
-//         }
-//     });
-//     subscriber.on("message", (channel, msg) => {
-//         if (channel == "send-coords"){
-//             socket.broadcast.emit("get-coords", msg);
-//         }
-//     })
-// }
 await handler(socket);
 
 app.get("/", (req, res) => {
