@@ -13,7 +13,7 @@ class Mouse {
         container.style.pointerEvents = "none" // AI garbage.  WTF is this and what is it for
         
         const img = document.createElement("img");
-        img.src = "/assets/mouse-standing.png";
+        img.src = "../assets/mouse-standing.png";
         img.style.width = "100%";
         img.style.height = "100%";
 
