@@ -9,6 +9,7 @@ export default class Manager {
         this.MAX_CONN = process.env.MAX_CONN;
         this.alive = "alive";
         this.inactive = "inactive";
+        this.dead = "dead";
         this.clock();
     }
     clock() {
@@ -49,7 +50,8 @@ export default class Manager {
         const obj = await this.redis.hgetall(this.alive);
         for (const [id, ttl] of Object.entries(obj)) {
             const delta = ttl - Date.now();
-            console.log(`${id} ${ttl} ${Math.round(delta /1000)} secs`)
+            // Display countdown
+            //console.log(`${id} ${ttl} ${Math.round(delta /1000)} secs`)
             if (delta < 0){
                 if(this.remove(id)){
                     console.log(`Removed connection ${id}`);
@@ -65,6 +67,7 @@ export default class Manager {
         await this.redis.hdel(this.alive, id);
         const clientSock = this.socket.sockets.sockets.get(id);
         if (clientSock && clientSock.connected){
+            this.socket.emit(this.dead, id);
             this.socket.to(id).emit(this.inactive, id);
             return true;
         }

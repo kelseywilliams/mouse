@@ -36,34 +36,36 @@ async function handler (socket){
     const publisher = await connect();
     const subscriber = await connect();
     socket.on("connection", async (socket) => {
-        socket.on("send-coords", async (msg) =>{
+        socket.on("send-data", async (msg) =>{
             const obj = JSON.parse(msg);
             const id = obj.id;
             const ttl = obj.ttl;
             if (await manager.push(id, ttl)){
-                console.log(`Updated ${id}`);
-                await publisher.publish("send-coords", msg);
+                await publisher.publish("data", msg);
             }
         });
-        subscriber.subscribe("send-coords", (err, count) => {
+        subscriber.subscribe("data", (err) => {
             if (err){
-                console.log("Error subscribing to send-coords: " + err);
+                console.log("Error subscribing to data: " + err);
             } else {
-                console.log(`Subscribed to send-coords.`);
+                //console.log(`Subscribed to data.`);
+                console.log(`User connected`);
             }
         });
         subscriber.on("message", (channel, msg) => {
-            if (channel == "send-coords"){
+            if (channel == "data"){
                 const id = JSON.parse(msg).id;
-                socket.except(id).emit("get-coords", msg);
+                socket.except(id).emit("get-data", msg);
             }
         });
+        socket.on("disconnect", () => {
+            console.log(`User disconnected: ${socket.id}`)
+            socket.broadcast.emit("dead", socket.id);
+        });
     });
-    socket.on("disconnect", () => {
-        subscriber.unsubscribe("send-coords");
-        subscriber.quit();
-        publisher.quit();
-    })
+    // subscriber.unsubscribe("send-data");
+    // subscriber.quit();
+    // publisher.quit();
 }
 
 await handler(socket);

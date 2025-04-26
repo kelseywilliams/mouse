@@ -1,0 +1,16 @@
+html, body {
+    cursor: none;
+    margin: 0;
+    padding-bottom: /* height of footer */ 60px;
+}
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;    /* include padding in width */
+    padding: 1rem;             /* tweak as needed */
+    background: #f8f8f8;          /* whatever your bg is */
+    color: #000;
+    text-align: center;
+  }
