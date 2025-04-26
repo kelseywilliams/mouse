@@ -87,11 +87,13 @@ export default class Manager {
             return true;
         } else {
             // If this is a new connection, check if we can accept it
+
             const count = await this.redis.hlen(this.alive);
             if (count >= this.MAX_CONN){
                 console.log(`Cannot push connection to set ${this.alive} because the maximum number of concurrent connections has been reached.`);
             } else {
                 await this.redis.hset(this.alive, id, ttl);
+                console.log(`User connected ${id}`);
                 return true;
             }
         }

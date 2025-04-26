@@ -119,18 +119,18 @@ class Client {
         });
         // Listen for the dead lmao
         this.socket.on("dead", (dead) => {
-            console.log(dead);
+            console.log(`${dead} left`);
             this.MiceManager.remove(dead);
         });
     }
     async handleDisconnect(){
         this.socket.on("inactive", () =>{
-            console.log("User kicked for inactivity");
+            console.log("Kicked for inactivity");
             alert("Kicked for Inactivity! Reload the page.");
             this.socket.disconnect();
         })
         this.socket.on("connect_error", (err) => {
-            console.log(`socket connection error: ${err}`);
+            console.log(`Socket connection error: ${err}`);
             this.socket.disconnect();
         });
     }

@@ -16,8 +16,10 @@ class MiceManager {
         }
     }
     remove(id){
-        let mouse = this.mice[id];
-        mouse.destroy();
-        delete mouse.id;
+        if (id in this.mice){
+            let mouse = this.mice[id];
+            mouse.destroy();
+            delete mouse.id;
+        }
     }
 }

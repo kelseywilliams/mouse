@@ -46,10 +46,7 @@ async function handler (socket){
         });
         subscriber.subscribe("data", (err) => {
             if (err){
-                console.log("Error subscribing to data: " + err);
-            } else {
-                //console.log(`Subscribed to data.`);
-                console.log(`User connected`);
+                console.log("Error subscribing to redis channel: data: " + err);
             }
         });
         subscriber.on("message", (channel, msg) => {
@@ -59,8 +56,8 @@ async function handler (socket){
             }
         });
         socket.on("disconnect", () => {
-            console.log(`User disconnected: ${socket.id}`)
             socket.broadcast.emit("dead", socket.id);
+            manager.remove(id);
         });
     });
     // subscriber.unsubscribe("send-data");
