@@ -1,6 +1,6 @@
 class Client {
     constructor(){
-        this.socket = io();
+        this.socket = io({path: "/mouse/socket.io"});
         this.TIMEOUT = 30000;
         this.connected = false;
         this.MiceManager = new MiceManager();

@@ -12,7 +12,7 @@ import Manager from "./scripts/Manager.js"
 const app = express()
 app.use(express.static("frontend"));
 const server = http.createServer(app);
-const socket = new Server(server);
+const socket = new Server(server, {path: "/mouse/socket.io"});
 
 console.log("Express server on http");
 server.listen(3001);
