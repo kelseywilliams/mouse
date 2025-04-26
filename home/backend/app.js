@@ -57,7 +57,6 @@ async function handler (socket){
         });
         socket.on("disconnect", () => {
             socket.broadcast.emit("dead", socket.id);
-            manager.remove(socket.id);
         });
     });
     // subscriber.unsubscribe("send-data");
