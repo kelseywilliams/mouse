@@ -3,6 +3,7 @@ class Client {
         this.socket = io();
         this.TIMEOUT = 30000;
         this.connected = false;
+        this.MiceManager = new MiceManager();
         this.clock();
     }
     clock() {
@@ -14,42 +15,7 @@ class Client {
         }, 1000);
     }
     // Util Functions
-    createMouse(id, mice) {
-        // Create a container to hold both the pointer and the label.
-        const container = document.createElement("div");
-        container.style.position = "absolute";
-
-        // Create the fake mouse pointer as an arrow shape.
-        const fakeMouse = document.createElement("div");
-        fakeMouse.style.width = "8px";
-        fakeMouse.style.height = "16px";
-        fakeMouse.style.backgroundColor = "black";
-        fakeMouse.style.clipPath = "polygon(10% 0, 0 80%, 100% 65%)";
-        fakeMouse.style.pointerEvents = "none"; // so it doesn't block clicks
-    
-
-        // Create the label displaying the id.
-        const label = document.createElement("div");
-        label.textContent = id;
-        label.style.position = "absolute";
-        label.style.bottom = "100%"; // position above the pointer
-        label.style.left = "50%";
-        label.style.transform = "translateX(-50%)";
-        label.style.backgroundColor = "rgba(211,211,211,0.7)"; // light grey, mostly transparent
-        label.style.color = "black";
-        label.style.padding = "2px 4px";
-        label.style.fontSize = "10px";
-        label.style.whiteSpace = "nowrap";
-
-        // Append label and pointer to the container.
-        container.appendChild(label);
-        container.appendChild(fakeMouse);
-
-        // Append the container to the document.
-        document.body.appendChild(container);
-
-        mice[id] = container;
-    }
+      
     rinseAndStringifyEntry(id, x, y, ttl){
         // Util stuff
         function checkNum(l,v){
@@ -87,38 +53,80 @@ class Client {
         return false;
     }
     // Main methods
-    async sendCoords(){ 
+    async sendData(){ 
         document.addEventListener("mousemove", (e) => {
+            let id = this.socket.id;
             let x = e.clientX;
             let y = e.clientY;
             let ttl = Date.now() + this.TIMEOUT;
             if (this.connected){
-                let msg = this.rinseAndStringifyEntry(this.socket.id, x, y, ttl);
+                let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
                 try{
-                    this.socket.emit("send-coords", msg)
+                    this.socket.emit("send-data", msg)
+                } catch (err) {
+                    console.log(`Error sending data: ${err}`);
+                }
+                this.MiceManager.push(id, x, y);
+            }
+        });
+        let activeId = null;
+        document.addEventListener('touchstart', (e) => {
+            let id = this.socket.id;
+            const t = e.touches[0];
+            activeId = t.identifier;
+
+            let x = t.clientX;
+            let y = t.clientY;
+            let ttl = Date.now() + this.TIMEOUT;
+            if (this.connected){
+                let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
+                try{
+                    this.socket.emit("send-data", msg);
+                    this.MiceManager.push(id, x, y);
                 } catch (err) {
                     console.log(`Error sending data: ${err}`);
                 }
             }
         });
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();  // avoid scroll
+            for (let t of e.touches) {
+                if (t.identifier === activeId) {
+                    let id = this.socket.id;
+                    let x = t.clientX;
+                    let y = t.clientY;
+                    let ttl = Date.now() + this.TIMEOUT;
+                    if (this.connected){
+                        let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
+                        try{
+                            this.socket.emit("send-data", msg);
+                        } catch (err) {
+                            console.log(`Error sending data: ${err}`);
+                        }
+                        this.MiceManager.push(id, x, y);
+                    }
+                    break;
+                }
+            }
+        }, { passive: false }); // what is passive: false
+
     }
-    async getCoords(){
-        const mice = {};
-        this.socket.on("get-coords", (msg) => {
+    async getData(){
+        this.socket.on("get-data", (msg) => {
             const data = JSON.parse(msg);
             const { id, x, y, ttl } = data; 
-            if (id && !mice[id]) {
-                this.createMouse(id, mice);
-            } else {
-                // Update that user's mouse position
-                mice[id].style.left = x + "px";
-                mice[id].style.top = y + "px";
-            }
+            this.MiceManager.push(id, x, y);
+        });
+        // Listen for the dead lmao
+        this.socket.on("dead", (dead) => {
+            console.log(dead);
+            this.MiceManager.remove(dead);
         });
     }
     async handleDisconnect(){
         this.socket.on("inactive", () =>{
             console.log("User kicked for inactivity");
+            alert("Kicked for Inactivity! Reload the page.");
             this.socket.disconnect();
         })
         this.socket.on("connect_error", (err) => {
@@ -128,9 +136,9 @@ class Client {
     }
 
     handle(){
-        this.sendCoords(this.socket);
-        this.getCoords(this.socket);
-        this.handleDisconnect(this.socket);
+        this.sendData();
+        this.getData();
+        this.handleDisconnect();
     }
 }
 
