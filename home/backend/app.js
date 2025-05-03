@@ -14,25 +14,22 @@ app.use(express.static("frontend"));
 const server = http.createServer(app);
 const socket = new Server(server);
 
-console.log("Express server on http");
 server.listen(3001);
-console.log('Express started on port 3001');
+console.log("Express server on http on port 3001");
 
-const manager = new Manager(socket);
-
-// Returns redis client
 async function connect(){
-    try {
-        const redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
-        redis.select(0);
-        return redis;
-    } catch(e){
-        throw new Error(e);
-    }
-
+    const redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
+    redis.select(0);
+    redis.on('error', err => {
+        console.warn('A fatal error occured while trying to connect to the database.  (Is it on?)')
+        process.exit(1);
+    })
+    return redis;
 }
 
+
 async function handler (socket){
+    const manager = new Manager(socket, await connect());
     const publisher = await connect();
     const subscriber = await connect();
     socket.on("connection", async (socket) => {
@@ -56,15 +53,14 @@ async function handler (socket){
             }
         });
         socket.on("disconnect", () => {
+            manager.remove(socket.id);
             socket.broadcast.emit("dead", socket.id);
         });
     });
-    // subscriber.unsubscribe("send-data");
-    // subscriber.quit();
-    // publisher.quit();
 }
 
 await handler(socket);
+
 
 app.get("/", (req, res) => {
     if (err) res.status(500);

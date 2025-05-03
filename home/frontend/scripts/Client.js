@@ -3,14 +3,18 @@ class Client {
         this.socket = io();
         this.TIMEOUT = 30000;
         this.connected = false;
-        this.MiceManager = new MiceManager();
+        this.mice_manager = new MiceManager();
+        this.overlay_manager = new OverlayManager(this.socket);
         this.clock();
     }
     clock() {
         setInterval(() => {
+            // Connection check
             if (this.socket.connected != this.connected){
                 console.log(this.connected ? "status: disconnected" : "status: connected");
+                document.body.style.cursor = this.connected ? 'auto' : 'none';
                 this.connected = this.socket.connected;
+                this.overlay_manager.conn_status(this.connected);
             }
         }, 1000);
     }
@@ -66,7 +70,7 @@ class Client {
                 } catch (err) {
                     console.log(`Error sending data: ${err}`);
                 }
-                this.MiceManager.push(id, x, y);
+                this.mice_manager.push(id, x, y);
             }
         });
         let activeId = null;
@@ -82,7 +86,7 @@ class Client {
                 let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
                 try{
                     this.socket.emit("send-data", msg);
-                    this.MiceManager.push(id, x, y);
+                    this.mice_manager.push(id, x, y);
                 } catch (err) {
                     console.log(`Error sending data: ${err}`);
                 }
@@ -103,7 +107,7 @@ class Client {
                         } catch (err) {
                             console.log(`Error sending data: ${err}`);
                         }
-                        this.MiceManager.push(id, x, y);
+                        this.mice_manager.push(id, x, y);
                     }
                     break;
                 }
@@ -115,12 +119,12 @@ class Client {
         this.socket.on("get-data", (msg) => {
             const data = JSON.parse(msg);
             const { id, x, y, ttl } = data; 
-            this.MiceManager.push(id, x, y);
+            this.mice_manager.push(id, x, y);
         });
         // Listen for the dead lmao
         this.socket.on("dead", (dead) => {
             console.log(`${dead} left`);
-            this.MiceManager.remove(dead);
+            this.mice_manager.remove(dead);
         });
     }
     async handleDisconnect(){
@@ -139,6 +143,7 @@ class Client {
         this.sendData();
         this.getData();
         this.handleDisconnect();
+        this.overlay_manager.displayConns();
     }
 }
 

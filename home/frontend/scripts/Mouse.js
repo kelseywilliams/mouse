@@ -10,12 +10,13 @@ class Mouse {
         const container = document.createElement("div");
         container.id = this.id;
         container.style.position = "absolute";
+        container.style.zIndex = "100";
         container.style.pointerEvents = "none" // AI garbage.  WTF is this and what is it for
         
         const img = document.createElement("img");
-        img.src = "../assets/mouse-standing.png";
-        img.style.width = "100%";
-        img.style.height = "100%";
+        img.src = "../assets/pinkmouse.png";
+        img.style.width = "15vh";
+        img.style.height = "15vh";
 
         // Create label
         const label = document.createElement("div");
@@ -35,15 +36,15 @@ class Mouse {
         container.append(img, label);
         document.body.appendChild(container)
         
-        container.style.left = `${this.x}px`;
-        container.style.top = `${this.y}px`;
+        container.style.left = `${this.x-50}px`;
+        container.style.top = `${this.y-50}px`;
     }
     update (x, y){
         this.x = x;
         this.y = y;
         const container = document.getElementById(this.id);
-        container.style.left = `${this.x}px`;
-        container.style.top = `${this.y}px`;
+        container.style.left = `${this.x-50}px`;
+        container.style.top = `${this.y-50}px`;
     }
     destroy(){
         const container = document.getElementById(this.id);

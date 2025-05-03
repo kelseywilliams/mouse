@@ -3,13 +3,18 @@ dotenv.config();
 import Redis from "ioredis";
 
 export default class Manager {
-    constructor(socket) {
+    constructor(socket, redis) {
         this.socket = socket;
-        this.redis = new Redis(process.env.REDIS_URL, {enableReadyCheck: false});
+        this.redis = redis;
         this.MAX_CONN = process.env.MAX_CONN;
+        this.RECENTLY_RM_BUFF = process.env.REMOVE_RM_BUFF;
+        // Define channels.  Idk why I did it like this.  
+        // Maybe I'll go back to being normal
         this.alive = "alive";
         this.inactive = "inactive";
         this.dead = "dead";
+        this.recently_rm = "recently_rm";
+        this.num_conns = "num_conns";
         this.clock();
     }
     clock() {
@@ -42,10 +47,11 @@ export default class Manager {
     }
 
     async manage() {
-        const num_conns = await this.redis.hlen(this.alive);
+        let num_conns = await this.redis.hlen(this.alive);
         if (num_conns > this.MAX_CONN){
             throw new Error("Maximum number of concurrent connections exceeded.");
         }
+        this.socket.emit(this.num_conns, num_conns);
 
         const obj = await this.redis.hgetall(this.alive);
         for (const [id, ttl] of Object.entries(obj)) {
@@ -60,15 +66,28 @@ export default class Manager {
         }
     }
     async remove(id) {
-        const exists = await this.redis.hexists(this.alive, id);
-        if (!exists){
-            throw new Error(`Attempted to remove connection that does not exist.  id attempted = ${id}.`);
-        }
+        const exists_in_alive = await this.redis.hexists(this.alive, id);
+        // Keeping a set of recently deleted IDs is necessary for conflict resolution
+        const exists_in_recently_rm = await this.redis.sismember(this.recently_rm, id);
+        if (!exists_in_alive){
+            if (!exists_in_recently_rm){
+                throw new Error(`Attempted to remove connection that does not exist.  id attempted = ${id}.`);
+            } else {
+                console.log("Attemped to remove an id twice.  Conflict handled peacefully.")
+                // housekeeping.  Don't let the recently deleted get too large
+                const count = await this.redis.scard(this.recently_rm);
+                if (count > this.RECENTLY_RM_BUFF){
+                    await this.redis.srem(this.recently_rm, id);
+                }
+                return true;
+            }
+        } 
         await this.redis.hdel(this.alive, id);
         const clientSock = this.socket.sockets.sockets.get(id);
         if (clientSock && clientSock.connected){
             this.socket.emit(this.dead, id);
             this.socket.to(id).emit(this.inactive, id);
+            await this.redis.sadd(this.recently_rm, id);
             return true;
         }
         return false;
