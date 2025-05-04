@@ -26,7 +26,7 @@ export default class Manager {
 
     // Splits conn json into id and ttl and sanitizes it
     checkIDandTTL(id, ttl){      
-        if (!id || !ttl) {
+        if (id === undefined || ttl === undefined) {
             console.warn(`Warning: id or ttl is undefined. id = ${id} ttl = ${ttl})`);
             return false;
         }
@@ -66,6 +66,10 @@ export default class Manager {
         }
     }
     async remove(id) {
+        if (id === undefined){
+            console.log(`Warning: id or ttl is undefined. id = ${id}`);
+            return false;
+        }
         const exists_in_alive = await this.redis.hexists(this.alive, id);
         // Keeping a set of recently deleted IDs is necessary for conflict resolution
         const exists_in_recently_rm = await this.redis.sismember(this.recently_rm, id);
@@ -93,10 +97,10 @@ export default class Manager {
         return false;
     }
     async push(id, ttl){
-        if(!this.checkIDandTTL(id, ttl)){
+        if (id === undefined){
+            console.log(`Warning: id or ttl is undefined. id = ${id}`);
             return false;
         }
-
         // Look for an existing entry in alive channel
         const exists = await this.redis.hexists(this.alive, id);
 

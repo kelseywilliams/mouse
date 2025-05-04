@@ -7,10 +7,31 @@ class OverlayManager {
         document.body.appendChild(this.overlay);
     }
 
-    // async name () {
-    //     // TODO create form in bottom left corner
-    //     // Figure out handler or endpoint for name form
-    // } 
+    async display_name () {
+        let container = document.getElementById("name");
+        if(!container){
+            container = document.createElement("div");
+            container.id = "name";
+            container.className = "name";
+            let textbox = document.createElement("input");
+            textbox.id = "textbox"
+            textbox.className = "textbox";
+            textbox.placeholder = "Enter a name"
+            let submit = document.createElement("button");
+            submit.type = "submit";
+            submit.id = "submit";
+            submit.className = "submit";
+            submit.textContent = "send";
+            container.append(textbox, submit);
+            this.overlay.append(container);
+        }
+        submit.addEventListener("click", () => {
+            const tbox = document.getElementById("textbox");
+            this.name = tbox.value;
+            tbox.value = "";
+            this.socket.emit("name", this.name);
+        });
+    } 
     async conn_status (status) {
         let container = document.getElementById("conn_status");
         if(!container){
@@ -22,15 +43,17 @@ class OverlayManager {
         container.innerText = status ? `Connected` : `Disconnected`;
         container.style.color = status ? "#19450e" : "#611914"
     }
-    async displayConns () {
+    async display_conns () {
+        let container = document.getElementById("num_conns");
+        if (!container){
+            container = document.createElement("div");
+            container.id = "num_conns";
+            container.className = "num_conns";
+            this.overlay.append(container);
+        }
+        container.textContent = `Online: 0`;
         this.socket.on("num_conns", (num) => {
             let container = document.getElementById("num_conns");
-            if (!container){
-                container = document.createElement("div");
-                container.id = "num_conns";
-                container.className = "num_conns";
-                this.overlay.append(container);
-            }
             container.textContent = `Online: ${num}`;
         });
     }

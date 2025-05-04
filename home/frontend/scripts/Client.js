@@ -3,6 +3,7 @@ class Client {
         this.socket = io();
         this.TIMEOUT = 30000;
         this.connected = false;
+        this.name = undefined;
         this.mice_manager = new MiceManager();
         this.overlay_manager = new OverlayManager(this.socket);
         this.clock();
@@ -20,7 +21,7 @@ class Client {
     }
     // Util Functions
       
-    rinseAndStringifyEntry(id, x, y, ttl){
+    rinseAndStringifyEntry(id, x, y, ttl, name){
         // Util stuff
         function checkNum(l,v){
             if (!/^\d+$/.test(v)){
@@ -29,7 +30,7 @@ class Client {
             return false;
         }
         // Check socket id
-        if (id === "undefined" && this.connected){
+        if (id === undefined && this.connected){
             console.log(`Warning. id is possibly undefined.  id = ${id}.`)
         }
         else if (id.length != 20){
@@ -47,10 +48,11 @@ class Client {
         }
         else {
             const entry = JSON.stringify({
-                id: this.socket.id,
+                id: id,
                 x:x,
                 y:y,
-                ttl:ttl
+                ttl:ttl,
+                name:name
             });
             return entry;
         }
@@ -63,14 +65,15 @@ class Client {
             let x = e.clientX;
             let y = e.clientY;
             let ttl = Date.now() + this.TIMEOUT;
+            let name = this.name;
             if (this.connected){
-                let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
+                let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
                 try{
                     this.socket.emit("send-data", msg)
                 } catch (err) {
                     console.log(`Error sending data: ${err}`);
                 }
-                this.mice_manager.push(id, x, y);
+                this.mice_manager.push(id, x, y, name);
             }
         });
         let activeId = null;
@@ -82,11 +85,12 @@ class Client {
             let x = t.clientX;
             let y = t.clientY;
             let ttl = Date.now() + this.TIMEOUT;
+            let name = this.name;
             if (this.connected){
-                let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
+                let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
                 try{
                     this.socket.emit("send-data", msg);
-                    this.mice_manager.push(id, x, y);
+                    this.mice_manager.push(id, x, y, name);
                 } catch (err) {
                     console.log(`Error sending data: ${err}`);
                 }
@@ -100,14 +104,15 @@ class Client {
                     let x = t.clientX;
                     let y = t.clientY;
                     let ttl = Date.now() + this.TIMEOUT;
+                    let name = this.name;
                     if (this.connected){
-                        let msg = this.rinseAndStringifyEntry(id, x, y, ttl);
+                        let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
                         try{
                             this.socket.emit("send-data", msg);
                         } catch (err) {
                             console.log(`Error sending data: ${err}`);
                         }
-                        this.mice_manager.push(id, x, y);
+                        this.mice_manager.push(id, x, y, name);
                     }
                     break;
                 }
@@ -118,13 +123,27 @@ class Client {
     async getData(){
         this.socket.on("get-data", (msg) => {
             const data = JSON.parse(msg);
-            const { id, x, y, ttl } = data; 
-            this.mice_manager.push(id, x, y);
+            const { id, x, y, ttl, name } = data; 
+            this.mice_manager.push(id, x, y, name);
         });
         // Listen for the dead lmao
         this.socket.on("dead", (dead) => {
             console.log(`${dead} left`);
             this.mice_manager.remove(dead);
+        });
+        this.socket.on("set-name", (name) => {
+            this.name = name;
+            // // Kind of sick ai function to get current x y
+            // const getCursorPosition = (() => {
+            //     const pos = { x: 0, y: 0 };
+            //     window.addEventListener('mousemove', (e) => {
+            //         pos.x = e.clientX;
+            //         pos.y = e.clientY;
+            //     });
+            //     return () => ({ x: pos.x, y: pos.y });
+            // })();
+            // const { x, y } = getCursorPosition();
+            this.mice_manager.push(this.socket.id, window.innerWidth / 2, window.innerHeight / 2, name);
         });
     }
     async handleDisconnect(){
@@ -143,7 +162,9 @@ class Client {
         this.sendData();
         this.getData();
         this.handleDisconnect();
-        this.overlay_manager.displayConns();
+        this.overlay_manager.display_conns();
+        this.overlay_manager.display_name();
+        this.overlay_manager.conn_status(this.connected);
     }
 }
 

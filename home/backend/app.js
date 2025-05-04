@@ -7,9 +7,11 @@ dotenv.config();
 import { Server } from "socket.io";
 import Redis from "ioredis";
 import Manager from "./scripts/Manager.js"
+import validator from "validator";
 
 // Returns express app and socket
 const app = express()
+app.use(express.json());
 app.use(express.static("frontend"));
 const server = http.createServer(app);
 const socket = new Server(server);
@@ -32,14 +34,20 @@ async function handler (socket){
     const manager = new Manager(socket, await connect());
     const publisher = await connect();
     const subscriber = await connect();
+    let timeout = 60000 // give the user 60 seconds to input before disconnect
     socket.on("connection", async (socket) => {
+        manager.push(socket.id, Date.now() + timeout)
         socket.on("send-data", async (msg) =>{
             const obj = JSON.parse(msg);
             const id = obj.id;
             const ttl = obj.ttl;
+            const name = msg.name;
             if (await manager.push(id, ttl)){
                 await publisher.publish("data", msg);
             }
+        });
+        socket.on("name", async (name) => {
+            socket.emit("set-name", name);
         });
         subscriber.subscribe("data", (err) => {
             if (err){
@@ -52,8 +60,8 @@ async function handler (socket){
                 socket.except(id).emit("get-data", msg);
             }
         });
-        socket.on("disconnect", () => {
-            manager.remove(socket.id);
+        socket.on("disconnect", async () => {
+            await manager.remove(socket.id);
             socket.broadcast.emit("dead", socket.id);
         });
     });
@@ -61,7 +69,13 @@ async function handler (socket){
 
 await handler(socket);
 
-
+// app.post("/api/name", async (req, res) => {
+//     let { id, name } = req.body;
+//     const cleanId = validator.escape(id);
+//     const cleanName = validator.escape(name);
+//     let redis = await connect();
+//     redis.
+// });
 app.get("/", (req, res) => {
     if (err) res.status(500);
     res.status(200);

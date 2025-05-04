@@ -3,16 +3,16 @@ class MiceManager {
         this.mice = {};
     }
 
-    push (id, x, y){
+    push (id, x, y, name){
         if (!/^\d+$/.test(x) || !/^\d+$/.test(y)){
             throw Error("x and y are not numerical.")
         }
         if (id in this.mice){
             let mouse = this.mice[id];
-            mouse.update(x, y);
+            mouse.update(x, y, name);
         } else {
             this.mice[id] = new Mouse(id);
-            this.mice[id].update(id, x, y);
+            this.mice[id].update(x, y, name);
         }
     }
     remove(id){
