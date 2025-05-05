@@ -1,7 +1,7 @@
 class Client {
     constructor(){
         this.socket = io();
-        this.TIMEOUT = 30000;
+        this.TIMEOUT = 300000;
         this.connected = false;
         this.name = undefined;
         this.mice_manager = new MiceManager();
