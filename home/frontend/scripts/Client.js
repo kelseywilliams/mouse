@@ -10,18 +10,21 @@ class Client {
     }
     clock() {
         setInterval(() => {
+            document.body.style.cursor = this.connected ? 'auto' : 'none';
             // Connection check
             if (this.socket.connected != this.connected){
                 console.log(this.connected ? "status: disconnected" : "status: connected");
-                document.body.style.cursor = this.connected ? 'auto' : 'none';
                 this.connected = this.socket.connected;
-                this.overlay_manager.conn_status(this.connected);
+                this.overlay_manager.display_conn_status(this.connected);
             }
         }, 1000);
     }
     // Util Functions
-      
-    rinseAndStringifyEntry(id, x, y, ttl, name){
+    
+    // None of the these conditions should be possible without malicious intervention 
+    // clientside.  Therefore, this will be removed in later version as proper 
+    // sanitization is handled on the backend.
+    debug(id, x, y, ttl, name){
         // Util stuff
         function checkNum(l,v){
             if (!/^\d+$/.test(v)){
@@ -59,7 +62,7 @@ class Client {
         return false;
     }
     // Main methods
-    async sendData(){ 
+    async send_data(){ 
         document.addEventListener("mousemove", (e) => {
             let id = this.socket.id;
             let x = e.clientX;
@@ -67,7 +70,7 @@ class Client {
             let ttl = Date.now() + this.TIMEOUT;
             let name = this.name;
             if (this.connected){
-                let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
+                let msg = this.debug(id, x, y, ttl, name);
                 try{
                     this.socket.emit("send-data", msg)
                 } catch (err) {
@@ -82,12 +85,12 @@ class Client {
             const t = e.touches[0];
             activeId = t.identifier;
 
-            let x = t.clientX;
-            let y = t.clientY;
+            let x = Math.round(t.clientX);
+            let y = Math.round(t.clientY);
             let ttl = Date.now() + this.TIMEOUT;
             let name = this.name;
             if (this.connected){
-                let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
+                let msg = this.debug(id, x, y, ttl, name);
                 try{
                     this.socket.emit("send-data", msg);
                     this.mice_manager.push(id, x, y, name);
@@ -101,12 +104,12 @@ class Client {
             for (let t of e.touches) {
                 if (t.identifier === activeId) {
                     let id = this.socket.id;
-                    let x = t.clientX;
-                    let y = t.clientY;
+                    let x = Math.round(t.clientX);
+                    let y = Math.round(t.clientY);
                     let ttl = Date.now() + this.TIMEOUT;
                     let name = this.name;
                     if (this.connected){
-                        let msg = this.rinseAndStringifyEntry(id, x, y, ttl, name);
+                        let msg = this.debug(id, x, y, ttl, name);
                         try{
                             this.socket.emit("send-data", msg);
                         } catch (err) {
@@ -120,7 +123,7 @@ class Client {
         }, { passive: false }); // what is passive: false
 
     }
-    async getData(){
+    async get_data(){
         this.socket.on("get-data", (msg) => {
             const data = JSON.parse(msg);
             const { id, x, y, ttl, name } = data; 
@@ -133,20 +136,10 @@ class Client {
         });
         this.socket.on("set-name", (name) => {
             this.name = name;
-            // // Kind of sick ai function to get current x y
-            // const getCursorPosition = (() => {
-            //     const pos = { x: 0, y: 0 };
-            //     window.addEventListener('mousemove', (e) => {
-            //         pos.x = e.clientX;
-            //         pos.y = e.clientY;
-            //     });
-            //     return () => ({ x: pos.x, y: pos.y });
-            // })();
-            // const { x, y } = getCursorPosition();
-            this.mice_manager.push(this.socket.id, window.innerWidth / 2, window.innerHeight / 2, name);
+            this.mice_manager.set_name(this.socket.id, name);
         });
     }
-    async handleDisconnect(){
+    async handle_disconnect(){
         this.socket.on("inactive", () =>{
             console.log("Kicked for inactivity");
             alert("Kicked for Inactivity! Reload the page.");
@@ -159,12 +152,11 @@ class Client {
     }
 
     handle(){
-        this.sendData();
-        this.getData();
-        this.handleDisconnect();
-        this.overlay_manager.display_conns();
-        this.overlay_manager.display_name();
-        this.overlay_manager.conn_status(this.connected);
+        this.send_data();
+        this.get_data();
+        this.handle_disconnect();
+        this.overlay_manager.handle();
+        this.overlay_manager.display_conn_status(this.connected)
     }
 }
 

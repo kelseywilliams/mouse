@@ -17,6 +17,7 @@ class OverlayManager {
             textbox.id = "textbox"
             textbox.className = "textbox";
             textbox.placeholder = "Enter a name"
+            textbox.required = "true";
             let submit = document.createElement("button");
             submit.type = "submit";
             submit.id = "submit";
@@ -32,7 +33,7 @@ class OverlayManager {
             this.socket.emit("name", this.name);
         });
     } 
-    async conn_status (status) {
+    async display_conn_status (status) {
         let container = document.getElementById("conn_status");
         if(!container){
             container = document.createElement("div");
@@ -56,5 +57,9 @@ class OverlayManager {
             let container = document.getElementById("num_conns");
             container.textContent = `Online: ${num}`;
         });
+    }
+    async handle() {
+        this.display_name();
+        this.display_conns();
     }
 }

@@ -34,34 +34,61 @@ async function handler (socket){
     const manager = new Manager(socket, await connect());
     const publisher = await connect();
     const subscriber = await connect();
+    subscriber.subscribe("data", (err) => {
+        if (err){
+            console.log("Error subscribing to redis channel: data: " + err);
+        }
+    });
+    subscriber.on("message", (channel, msg) => {
+        if (channel == "data"){
+            const id = JSON.parse(msg).id;
+            socket.except(id).emit("get-data", msg);
+        }
+    });
     let timeout = 60000 // give the user 60 seconds to input before disconnect
     socket.on("connection", async (socket) => {
         manager.push(socket.id, Date.now() + timeout)
         socket.on("send-data", async (msg) =>{
-            const obj = JSON.parse(msg);
-            const id = obj.id;
-            const ttl = obj.ttl;
-            const name = msg.name;
-            if (await manager.push(id, ttl)){
-                await publisher.publish("data", msg);
+            let obj;
+            try {
+              obj = JSON.parse(msg);
+            } catch (e) {
+                throw new Error("Invalid object type recieved by server.");
+            }
+          
+            // pull out fields
+            const { id, x, y, ttl, name } = obj;
+          
+            // coerce to numbers & check
+            const sx  = Number(x);
+            const sy  = Number(y);
+            const st  = Number(ttl);
+            if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(st)) {
+              throw new Error("Invalid data received by server.")
+              return;
+            }
+          
+            // sanitize the other bits
+            const sid   = String(id);
+            const sname = (name !== undefined) ? validator.escape(name) : undefined;
+          
+            if (await manager.push(sid, st)) {
+              // only publish the cleaned payload
+              const clean = { id: sid, x: sx, y: sy, ttl: st, name: sname };
+              await publisher.publish("data", JSON.stringify(clean));
             }
         });
         socket.on("name", async (name) => {
-            socket.emit("set-name", name);
-        });
-        subscriber.subscribe("data", (err) => {
-            if (err){
-                console.log("Error subscribing to redis channel: data: " + err);
+            if (name != ""){
+                const clean_name = validator.escape(name);
+                socket.emit("set-name", clean_name);
             }
+
         });
-        subscriber.on("message", (channel, msg) => {
-            if (channel == "data"){
-                const id = JSON.parse(msg).id;
-                socket.except(id).emit("get-data", msg);
-            }
-        });
+
         socket.on("disconnect", async () => {
-            await manager.remove(socket.id);
+            await manager.push(socket.id, 0);
+            await manager.manage();
             socket.broadcast.emit("dead", socket.id);
         });
     });

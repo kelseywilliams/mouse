@@ -9,15 +9,15 @@ class Mouse {
         // Create mouse
         const container = document.createElement("div");
         container.id = this.id;
-        container.style.position = "absolute";
+        container.style.position = "fixed";
         container.style.zIndex = "9999";
         container.style.pointerEvents = "none" // AI garbage.  WTF is this and what is it for
         container.style.transform = "translate(-50%, -50%)";
         const img = document.createElement("img");
         img.id = `img:${this.id}`;
-        img.src = "../assets/pinkmouse.png";
-        img.style.width = "15vh";
-        img.style.height = "15vh";
+        img.src = "https://kelseywilliams.co/mouse/assets/pinkmouse.png";
+        img.style.width = "70px";
+        img.style.height = "70px";
 
         // Create label
         const label = document.createElement("div");
@@ -50,6 +50,10 @@ class Mouse {
         containerLabel.textContent = (name !== undefined) ? name : this.id;
         container.style.left = `${this.x}px`;
         container.style.top = `${this.y}px`;
+    }
+    set_name(name){
+        const containerLabel = document.getElementById(`label:${this.id}`);
+        containerLabel.textContent = (name !== undefined) ? name : this.id;
     }
     destroy(){
         const container = document.getElementById(this.id);
