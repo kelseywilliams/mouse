@@ -1,6 +1,6 @@
 # Mouse
 ## Description 
-Mouse is a public lobby for mouse cursors built in nodejs.  The cursor position of each connected user is broadcast to every other user. This project started as an exercise in pubsub and socket programming and ended with dream of becoming a very bad club penguin.
+Mouse is a public lobby for mouse cursors built in nodejs.  The cursor position of each user is broadcast to every other user. This project started as an exercise in pubsub and socket programming and begun having dreams of becoming a very bad club penguin.
 
 ## Dependencies
 You will need
