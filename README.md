@@ -8,7 +8,7 @@ You will need
 - .env file in /home 
 
 ### Redis Database
-The database must be ran unencrypted on any port and the user chosen to authorize requests must have pubsub permissions on all channels.  
+A database must be ran unencrypted on any port and the user chosen to authorize requests must have pubsub permissions on all channels.  
 The user and permissions must be set in the database.  Mouse will access redis via url, passing the user and its password to the database.  The url will be defined in .env
 
 ### .env
