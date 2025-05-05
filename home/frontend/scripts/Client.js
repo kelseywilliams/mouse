@@ -10,11 +10,11 @@ class Client {
     }
     clock() {
         setInterval(() => {
-            document.body.style.cursor = this.connected ? 'auto' : 'none';
             // Connection check
             if (this.socket.connected != this.connected){
                 console.log(this.connected ? "status: disconnected" : "status: connected");
                 this.connected = this.socket.connected;
+                document.body.style.cursor = this.connected ? 'auto' : 'none';
                 this.overlay_manager.display_conn_status(this.connected);
             }
         }, 1000);
