@@ -4,6 +4,8 @@ class Mouse {
         this.x = 0;
         this.y = 0;
         this.create();
+        this.current_avatar;
+        this.avatars = ["assets/pinkmouse.png", "assets/mouse.png"]
     }
     create(){
         // Create mouse
@@ -15,7 +17,9 @@ class Mouse {
         container.style.transform = "translate(-50%, -50%)";
         const img = document.createElement("img");
         img.id = `img:${this.id}`;
-        img.src = "https://kelseywilliams.co/mouse/assets/pinkmouse.png";
+        // Make this selection random
+        this.current_avatar = 0;
+        img.src = this.avatars[0];
         img.style.width = "70px";
         img.style.height = "70px";
 
@@ -48,8 +52,18 @@ class Mouse {
         const container = document.getElementById(`${this.id}`);
         const containerLabel = document.getElementById(`label:${this.id}`);
         containerLabel.textContent = (name !== undefined) ? name : this.id;
+         
         container.style.left = `${this.x}px`;
         container.style.top = `${this.y}px`;
+    }
+    set_avatar(avatar){
+        const containerImage = document.getElementById(`img:${this.id}`)
+        if(avatar !== undefined) {
+            containerImage.src = this.avatar[avatars];
+            this.current_avatar = avatar;
+        } else {
+            containerImage.src = this.current_avatar;
+        }
     }
     set_name(name){
         const containerLabel = document.getElementById(`label:${this.id}`);

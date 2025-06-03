@@ -72,12 +72,12 @@ export default class Manager {
             const count = await this.redis.hlen("alive");
             if (count >= this.MAX_CONN){
                 logger.warn(`Cannot push connection to set ${"alive"} because the maximum number of concurrent connections has been reached.`);
+                return false;
             } else {
                 await this.redis.hset("alive", id, ttl);
                 logger.info(`User connected ${id}`);
                 return true;
             }
         }
-        return false;
     }
 }

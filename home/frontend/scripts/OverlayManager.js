@@ -7,6 +7,40 @@ class OverlayManager {
         document.body.appendChild(this.overlay);
     }
 
+    async mouse_select (mice_manager) {
+        let container = document.getElementById("mice");
+        if (!container){
+            container = document.createElement("div");
+            container.id = "mice";
+            container.className = "mice";
+
+            const mouse_option1 = document.createElement("div");
+            mouse_1.className = "mouse-option";
+            const mouse_image1 = document.createElement("img");
+            mouse_image1.src = "assets/mouse.png";
+            mouse_image1.alt = "mouse 1";
+            mouse_image1.classname = "mouse-image";
+
+            mouse_option1.appendChild(mouse_image1);
+
+            
+            const mouse_option2 = document.createElement("div");
+            mouse_2.className = "mouse-option";
+            const mouse_image2 = document.createElement("img");
+            mouse_image2.src = "assets/mouse.png";
+            mouse_image2.alt = "mouse 2";
+            mouse_image2.classname = "mouse-image";
+
+            mouse_option2.appendChild(mouse_image2);
+
+            container.append(mouse_option1, mouse_option2);
+
+            mouse_option1.addEventListener("click", () => {
+                
+            })
+
+        }
+    }
     async display_name () {
         let container = document.getElementById("name");
         if(!container){
@@ -26,6 +60,14 @@ class OverlayManager {
             container.append(textbox, submit);
             this.overlay.append(container);
         }
+        textbox.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const tbox = document.getElementById("textbox");
+                this.name = tbox.value;
+                tbox.value = "";
+                this.socket.emit("name", this.name);
+            }
+        });
         submit.addEventListener("click", () => {
             const tbox = document.getElementById("textbox");
             this.name = tbox.value;
